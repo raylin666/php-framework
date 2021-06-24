@@ -12,9 +12,12 @@
 namespace Raylin666\Framework;
 
 use Raylin666\Config\Config;
+use Raylin666\Config\ConfigOptions;
 use Raylin666\Container\Container;
 use Raylin666\Contract\ConfigInterface;
+use Raylin666\Contract\ServiceProviderInterface;
 use Raylin666\Framework\Contract\ApplicationInterface;
+use Raylin666\Framework\ServiceProvider\ConfigServiceProvider;
 
 /**
  * Class Application
@@ -23,10 +26,22 @@ use Raylin666\Framework\Contract\ApplicationInterface;
 class Application implements ApplicationInterface
 {
     /**
+     * 应用
+     * @var
+     */
+    protected static $app;
+
+    /**
      * 项目根目录
      * @var
      */
     protected $path;
+
+    /**
+     * 配置目录参数
+     * @var ConfigOptions
+     */
+    protected $configOptions;
 
     /**
      * 容器
@@ -36,16 +51,20 @@ class Application implements ApplicationInterface
 
     /**
      * Application constructor.
-     * @param $path
+     * @param string $path
      */
-    public function __construct($path)
+    public function __construct(string $path)
     {
         $this->path = $path;
+
+        $this->configOptions = new ConfigOptions($path);
+
+        static::$app = $this;
 
         $this->container = new Container();
         // 绑定应用
         $this->container->bind(ApplicationInterface::class, function () {
-            return $this;
+            return static::$app;
         });
         // 绑定配置
         $this->container->bind(ConfigInterface::class, function () {
@@ -53,6 +72,37 @@ class Application implements ApplicationInterface
             $config(require sprintf('%s/config.php', dirname(__DIR__)));
             return $config;
         });
+    }
+
+    /**
+     * 初始化项目配置
+     * @throws \Exception
+     */
+    public function __invoke()
+    {
+        // TODO: Implement __invoke() method.
+
+        // 时区设置
+        date_default_timezone_set($this->container->get(ConfigInterface::class)->get('timezone'));
+
+        // 注册服务提供者
+        (new ConfigServiceProvider())->register($this->container);
+        $providers = $this->container->get(ConfigInterface::class)->get('providers');
+        foreach ($providers as $provider) {
+            $provider = new $provider;
+            if ($provider instanceof ServiceProviderInterface) {
+                $provider->register($this->container);
+            }
+        }
+    }
+
+    /**
+     * 获取应用
+     * @return ApplicationInterface
+     */
+    public static function app(): ApplicationInterface
+    {
+        return static::$app;
     }
 
     /**
@@ -65,6 +115,38 @@ class Application implements ApplicationInterface
     }
 
     /**
+     * 设置配置目录参数
+     * @param string $path
+     * @param string $configPathName
+     * @param string $configFileName
+     * @param string $readPathName
+     * @return Application
+     */
+    public function withConfigOptions(
+        string $path,
+        $configPathName = 'config',
+        $configFileName = 'app',
+        $readPathName = 'autoload'
+    ): self
+    {
+        $this->configOptions->withPath($path)
+            ->withConfigPathName($configPathName)
+            ->withConfigFileName($configFileName)
+            ->withReadPathName($readPathName);
+
+        return $this;
+    }
+
+    /**
+     * 获取配置目录参数
+     * @return ConfigOptions
+     */
+    public function getConfigOptions(): ConfigOptions
+    {
+        return $this->configOptions;
+    }
+
+    /**
      * 应用名称
      * @return string
      */
@@ -72,7 +154,7 @@ class Application implements ApplicationInterface
     {
         // TODO: Implement name() method.
 
-        return $this->container()->get(ConfigInterface::class)->get('name');
+        return $this->container->get(ConfigInterface::class)->get('name');
     }
 
     /**
@@ -83,7 +165,7 @@ class Application implements ApplicationInterface
     {
         // TODO: Implement version() method.
 
-        return $this->container()->get(ConfigInterface::class)->get('version');
+        return $this->container->get(ConfigInterface::class)->get('version');
     }
 
     /**
