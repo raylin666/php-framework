@@ -17,6 +17,9 @@ use Raylin666\Container\Container;
 use Raylin666\Contract\ConfigInterface;
 use Raylin666\Contract\ServiceProviderInterface;
 use Raylin666\Framework\Contract\ApplicationInterface;
+use Raylin666\Framework\Contract\EnvironmentInterface;
+use Raylin666\Framework\Exception\DebugLogsException;
+use Raylin666\Framework\Helper\EnvironmentHelper;
 use Raylin666\Framework\ServiceProvider\ConfigServiceProvider;
 
 /**
@@ -48,6 +51,12 @@ class Application implements ApplicationInterface
      * @var
      */
     protected $container;
+
+    /**
+     * 应用是否已启动运行
+     * @var bool
+     */
+    protected $isExecute = false;
 
     /**
      * Application constructor.
@@ -82,11 +91,18 @@ class Application implements ApplicationInterface
     {
         // TODO: Implement __invoke() method.
 
+        // 注册配置服务提供者
+        (new ConfigServiceProvider())->register($this->container);
+
         // 时区设置
         date_default_timezone_set($this->container->get(ConfigInterface::class)->get('timezone'));
 
-        // 注册服务提供者
-        (new ConfigServiceProvider())->register($this->container);
+        // 注册环境配置
+        $this->container->bind(EnvironmentInterface::class, function () {
+            return new EnvironmentHelper($this->container->get(ConfigInterface::class)->get('environment'));
+        });
+
+        // 注册其他服务提供者
         $providers = $this->container->get(ConfigInterface::class)->get('providers');
         foreach ($providers as $provider) {
             $provider = new $provider;
@@ -94,6 +110,38 @@ class Application implements ApplicationInterface
                 $provider->register($this->container);
             }
         }
+
+        // 注册响应服务
+
+        // 注册异常处理
+        $this->registerExceptionHandler();
+    }
+
+    /**
+     * 注册异常处理
+     */
+    protected function registerExceptionHandler()
+    {
+        $level = $this->container->get(ConfigInterface::class)->get('error_reporting');
+
+        error_reporting($level);
+
+        // 设置错误处理器
+        set_exception_handler(function ($e) {
+            // 异常捕获转换
+            if (! $e instanceof \Exception) {
+                $e = new \ErrorException($e);
+            }
+
+            try {
+                $trace = DebugLogsException::getReturn($e);
+            } catch (\Exception $exception) {
+                $trace = [
+                    'original' => explode("\n", $e->getTraceAsString()),
+                    'handler'  => explode("\n", $exception->getTraceAsString()),
+                ];
+            }
+        });
     }
 
     /**
@@ -147,6 +195,15 @@ class Application implements ApplicationInterface
     }
 
     /**
+     * 应用运行状态/是否已启动
+     * @return bool
+     */
+    public function isExecute(): bool
+    {
+        return $this->isExecute;
+    }
+
+    /**
      * 应用名称
      * @return string
      */
@@ -186,5 +243,7 @@ class Application implements ApplicationInterface
     public function run()
     {
         // TODO: Implement run() method.
+
+        $this->isExecute = true;
     }
 }

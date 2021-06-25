@@ -11,6 +11,7 @@
 
 use Raylin666\Framework\Application;
 use Raylin666\Contract\ConfigInterface;
+use Raylin666\Framework\Contract\EnvironmentInterface;
 
 if (! function_exists('app')) {
     /**
@@ -41,6 +42,17 @@ if (! function_exists('config')) {
      */
     function config()
     {
-        return app()->container()->get(ConfigInterface::class);
+        return container()->get(ConfigInterface::class);
+    }
+}
+
+if (! function_exists('environment')) {
+    /**
+     * 获取环境
+     * @return EnvironmentInterface
+     */
+    function environment()
+    {
+        return container()->get(EnvironmentInterface::class);
     }
 }

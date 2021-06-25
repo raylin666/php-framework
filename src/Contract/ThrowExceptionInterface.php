@@ -2,41 +2,28 @@
 // +----------------------------------------------------------------------
 // | Created by linshan. 版权所有 @
 // +----------------------------------------------------------------------
-// | Copyright (c) 2020 All rights reserved.
+// | Copyright (c) 2019 All rights reserved.
 // +----------------------------------------------------------------------
 // | Technology changes the world . Accumulation makes people grow .
 // +----------------------------------------------------------------------
 // | Author: kaka梦很美 <1099013371@qq.com>
 // +----------------------------------------------------------------------
 
-return [
-    /**
-     * 应用名称
-     */
-    'name' => 'raylin66 framework',
+namespace Raylin666\Framework\Contract;
 
-    /**
-     * 应用版本
-     */
-    'version' => '1.0.0',
+use Exception;
 
+/**
+ * 抛出异常结果集
+ * Interface ThrowExceptionInterface
+ * @package Raylin666\Framework\Contract
+ */
+interface ThrowExceptionInterface
+{
     /**
-     * 应用时区
+     * 返回异常的结果集
+     * @param Exception $e
+     * @return mixed
      */
-    'timezone' => 'PRC',
-
-    /**
-     * 应用环境 local:本地环境 ｜ dev:测试环境 ｜ pre:预发布环境 ｜ prod:生产环境
-     */
-    'environment' => 'dev',
-
-    /**
-     * 错误级别
-     */
-    'error_reporting' => E_ALL,
-
-    /**
-     * 服务提供者
-     */
-    'providers' => [],
-];
+    public static function getReturn(Exception $e);
+}
