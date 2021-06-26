@@ -9,6 +9,12 @@
 // | Author: kaka梦很美 <1099013371@qq.com>
 // +----------------------------------------------------------------------
 
+use Monolog\DateTimeImmutable;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Raylin666\Logger\Logger;
+use Raylin666\Framework\ServiceProvider\LoggerServiceProvider;
+
 return [
     /**
      * 应用名称
@@ -38,5 +44,37 @@ return [
     /**
      * 服务提供者
      */
-    'providers' => [],
+    'providers' => [
+        LoggerServiceProvider::class
+    ],
+
+    /**
+     * 日志服务
+     */
+    'logger' => [
+        'default' => [
+            'handlers' => [
+                [
+                    'class'         =>  RotatingFileHandler::class,
+                    'constructor'   => [
+                        'filename'      =>  '',
+                        'maxFiles'      =>  31,
+                        'level'         =>  Logger::DEBUG,
+                        'bubble'        =>  true,
+                        'filePermission'=>  0666,
+                        'useLocking'    =>  false,
+                    ],
+                ]
+            ],
+            'formatter' => [
+                'class'         =>  LineFormatter::class,
+                'constructor'   =>  [
+                    'format'                        =>  "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
+                    'dateFormat'                    =>  new DateTimeImmutable(true, new DateTimeZone(date_default_timezone_get() ?: 'PRC')),
+                    'allowInlineLineBreaks'         => true,
+                    'ignoreEmptyContextAndExtra'    => false,
+                ]
+            ],
+        ],
+    ]
 ];

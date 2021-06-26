@@ -14,6 +14,7 @@ namespace Raylin666\Framework;
 use Raylin666\Config\Config;
 use Raylin666\Config\ConfigOptions;
 use Raylin666\Container\Container;
+use Raylin666\Container\ContainerFactory;
 use Raylin666\Contract\ConfigInterface;
 use Raylin666\Contract\ServiceProviderInterface;
 use Raylin666\Framework\Contract\ApplicationInterface;
@@ -70,7 +71,7 @@ class Application implements ApplicationInterface
 
         static::$app = $this;
 
-        $this->container = new Container();
+        $this->container = (new ContainerFactory(new Container()))->getContainer();
         // 绑定应用
         $this->container->bind(ApplicationInterface::class, function () {
             return static::$app;
@@ -141,6 +142,8 @@ class Application implements ApplicationInterface
                     'handler'  => explode("\n", $exception->getTraceAsString()),
                 ];
             }
+
+            logger()->error($e->getMessage(), $trace);
         });
     }
 

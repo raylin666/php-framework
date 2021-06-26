@@ -12,6 +12,7 @@
 use Raylin666\Framework\Application;
 use Raylin666\Contract\ConfigInterface;
 use Raylin666\Framework\Contract\EnvironmentInterface;
+use Raylin666\Logger\LoggerFactoryInterface;
 
 if (! function_exists('app')) {
     /**
@@ -54,5 +55,21 @@ if (! function_exists('environment')) {
     function environment()
     {
         return container()->get(EnvironmentInterface::class);
+    }
+}
+
+if (! function_exists('logger')) {
+    /**
+     * 获取日志
+     * @param null   $channel
+     * @param string $group
+     * @return \Raylin666\Contract\LoggerInterface|\Raylin666\Logger\Logger
+     */
+    function logger($channel = null, $group = 'default')
+    {
+        /** @var LoggerFactoryInterface $factory **/
+        $factory = container()->get(LoggerFactoryInterface::class);
+        $logger = $factory->get($group);
+        return $channel ? $logger->withName($channel) : $logger;
     }
 }
