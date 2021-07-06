@@ -13,7 +13,14 @@ use Monolog\DateTimeImmutable;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Raylin666\Logger\Logger;
+use Raylin666\Server\SwooleEvent;
+use Raylin666\Server\Contract\ServerInterface;
 use Raylin666\Framework\ServiceProvider\LoggerServiceProvider;
+use Raylin666\Framework\ServiceProvider\RouterServiceProvider;
+use Raylin666\Framework\ServiceProvider\ServerServiceProvider;
+use Raylin666\Framework\ServiceProvider\ConsoleServiceProvider;
+use Raylin666\Framework\Command\HttpServerCommand;
+use Raylin666\Server\Callbacks\OnRequest;
 
 return [
     /**
@@ -45,8 +52,33 @@ return [
      * 服务提供者
      */
     'providers' => [
-        LoggerServiceProvider::class
+        ConsoleServiceProvider::class,
+        RouterServiceProvider::class,
+        ServerServiceProvider::class,
+        LoggerServiceProvider::class,
     ],
+
+    /**
+     * 控制台命令
+     */
+    'commands' => [
+        'HttpServer' => [
+            'name' => HttpServerCommand::class,
+        ],
+    ],
+
+    /**
+     * 路由服务
+     */
+    'router' => [
+        'namespace' => '\\App\\Http\\Controllers\\',
+        'files' => [],
+    ],
+
+    /**
+     * 中间件服务
+     */
+    'middlewares' => [],
 
     /**
      * 日志服务
@@ -76,5 +108,36 @@ return [
                 ]
             ],
         ],
-    ]
+    ],
+
+    /**
+     * 应用服务
+     */
+    'server' => [
+        'mode' => SWOOLE_PROCESS,
+        'servers' => [
+            [
+                'name' => 'http',
+                'type' => ServerInterface::SERVER_HTTP,
+                'host' => '0.0.0.0',
+                'port' => 9901,
+                'sock_type' => SWOOLE_SOCK_TCP,
+                'callbacks' => [
+                    SwooleEvent::ON_REQUEST => OnRequest::class
+                ],
+            ],
+        ],
+        'settings' => [
+            'enable_coroutine' => true,
+            'worker_num' => swoole_cpu_num(),
+            'pid_file' => 'runtime/server.pid',
+            'open_tcp_nodelay' => true,
+            'max_coroutine' => 100000,
+            'open_http2_protocol' => true,
+            'max_request' => 100000,
+            'socket_buffer_size' => 2 * 1024 * 1024,
+            'buffer_output_size' => 2 * 1024 * 1024,
+        ],
+        'callbacks' => [],
+    ],
 ];

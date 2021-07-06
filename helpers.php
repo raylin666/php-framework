@@ -13,11 +13,13 @@ use Raylin666\Framework\Application;
 use Raylin666\Contract\ConfigInterface;
 use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Logger\LoggerFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\RequestInterface;
 
 if (! function_exists('app')) {
     /**
      * 获取应用
-     * @return \Raylin666\Framework\Contract\ApplicationInterface
+     * @return \Raylin666\Framework\Contract\ApplicationInterface|Application
      */
     function app()
     {
@@ -71,5 +73,29 @@ if (! function_exists('logger')) {
         $factory = container()->get(LoggerFactoryInterface::class);
         $logger = $factory->get($group);
         return $channel ? $logger->withName($channel) : $logger;
+    }
+}
+
+if (! function_exists('request')) {
+    /**
+     * 获取请求
+     * @return RequestInterface|\Raylin666\Framework\Http\Response
+     * @throws Exception
+     */
+    function request()
+    {
+        return container()->get(RequestInterface::class);
+    }
+}
+
+if (! function_exists('response')) {
+    /**
+     * 获取响应
+     * @return ResponseInterface|\Raylin666\Http\Response
+     * @throws Exception
+     */
+    function response()
+    {
+        return container()->get(ResponseInterface::class);
     }
 }

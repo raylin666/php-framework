@@ -11,6 +11,10 @@
 
 namespace Raylin666\Framework;
 
+use Exception;
+use ErrorException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Raylin666\Config\Config;
 use Raylin666\Config\ConfigOptions;
 use Raylin666\Container\Container;
@@ -18,9 +22,13 @@ use Raylin666\Container\ContainerFactory;
 use Raylin666\Contract\ConfigInterface;
 use Raylin666\Contract\ServiceProviderInterface;
 use Raylin666\Framework\Contract\ApplicationInterface;
+use Raylin666\Framework\Contract\CommandInterface;
 use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Framework\Exception\DebugLogsException;
+use Raylin666\Framework\Exception\HttpException;
+use Raylin666\Framework\Exception\ResponseException;
 use Raylin666\Framework\Helper\EnvironmentHelper;
+use Raylin666\Framework\Http\Response;
 use Raylin666\Framework\ServiceProvider\ConfigServiceProvider;
 
 /**
@@ -72,10 +80,12 @@ class Application implements ApplicationInterface
         static::$app = $this;
 
         $this->container = (new ContainerFactory(new Container()))->getContainer();
+
         // 绑定应用
         $this->container->bind(ApplicationInterface::class, function () {
             return static::$app;
         });
+
         // 绑定配置
         $this->container->bind(ConfigInterface::class, function () {
             $config = new Config();
@@ -86,7 +96,7 @@ class Application implements ApplicationInterface
 
     /**
      * 初始化项目配置
-     * @throws \Exception
+     * @throws Exception
      */
     public function __invoke()
     {
@@ -113,6 +123,9 @@ class Application implements ApplicationInterface
         }
 
         // 注册响应服务
+        $this->container->bind(ResponseInterface::class, function () {
+           return new Response();
+        });
 
         // 注册异常处理
         $this->registerExceptionHandler();
@@ -127,16 +140,16 @@ class Application implements ApplicationInterface
 
         error_reporting($level);
 
-        // 设置错误处理器
+        // 设置异常处理器
         set_exception_handler(function ($e) {
             // 异常捕获转换
-            if (! $e instanceof \Exception) {
-                $e = new \ErrorException($e);
+            if (! $e instanceof Exception) {
+                $e = new ErrorException($e);
             }
 
             try {
                 $trace = DebugLogsException::getReturn($e);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 $trace = [
                     'original' => explode("\n", $e->getTraceAsString()),
                     'handler'  => explode("\n", $exception->getTraceAsString()),
@@ -144,7 +157,22 @@ class Application implements ApplicationInterface
             }
 
             logger()->error($e->getMessage(), $trace);
+
+            $status = ($e instanceof HttpException) ? $e->getStatusCode() : $e->getCode();
+            if (! array_key_exists($status, Response::$statusTexts)) {
+                $status = Response::HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            $response = $this->container->get(ResponseInterface::class)->RESTfulAPI(ResponseException::getReturn($e), $status);
+
+            // 处理响应
+            return $this->isExecute() ? $response : $response->send();
         });
+
+        // 设置错误处理器
+        set_error_handler(function ($level, $message, $file, $line) {
+            throw new ErrorException($message, 0, $level, $file, $line);
+        }, $level);
     }
 
     /**
@@ -248,5 +276,7 @@ class Application implements ApplicationInterface
         // TODO: Implement run() method.
 
         $this->isExecute = true;
+
+        $this->container->get(CommandInterface::class)->run();
     }
 }
