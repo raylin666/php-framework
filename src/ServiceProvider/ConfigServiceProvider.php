@@ -44,7 +44,7 @@ class ConfigServiceProvider implements ServiceProviderInterface
         $config($configMerge);
 
         // 重新绑定配置
-        $container->bind(ConfigInterface::class, function () use ($config) {
+        $container->singleton(ConfigInterface::class, function () use ($config) {
             return $config;
         });
     }

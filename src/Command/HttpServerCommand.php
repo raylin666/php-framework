@@ -11,7 +11,6 @@
 
 namespace Raylin666\Framework\Command;
 
-use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Server\Contract\ServerInterface;
 use Raylin666\Server\ServerConfig;
 use Symfony\Component\Console\Input\InputInterface;

@@ -39,7 +39,7 @@ class ConsoleServiceProvider implements ServiceProviderInterface
             $application->add(new $command['name']($name));
         }
 
-        $container->bind(CommandInterface::class, function () use ($application) {
+        $container->singleton(CommandInterface::class, function () use ($application) {
             return $application;
         });
     }

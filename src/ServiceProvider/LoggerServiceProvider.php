@@ -40,7 +40,7 @@ class LoggerServiceProvider implements ServiceProviderInterface
         }
 
         // 绑定日志工厂
-        $container->bind(LoggerFactoryInterface::class, function () use ($loggerFactory) {
+        $container->singleton(LoggerFactoryInterface::class, function () use ($loggerFactory) {
             return $loggerFactory;
         });
     }

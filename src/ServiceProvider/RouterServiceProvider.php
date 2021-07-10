@@ -40,12 +40,12 @@ class RouterServiceProvider implements ServiceProviderInterface
         $routerDispatcher = new RouteDispatcher($router, $config->get('middlewares'));
 
         // 注册路由
-        $container->bind(RouterInterface::class, function () use ($router) {
+        $container->singleton(RouterInterface::class, function () use ($router) {
             return $router;
         });
 
         // 注册路由分发器
-        $container->bind(RouterDispatcherInterface::class, function () use ($routerDispatcher) {
+        $container->singleton(RouterDispatcherInterface::class, function () use ($routerDispatcher) {
            return $routerDispatcher;
         });
 

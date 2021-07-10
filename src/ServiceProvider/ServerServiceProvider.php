@@ -35,7 +35,7 @@ class ServerServiceProvider implements ServiceProviderInterface
     {
         // TODO: Implement register() method.
 
-        $container->bind(ServerInterface::class, function () {
+        $container->singleton(ServerInterface::class, function () {
             return new Server();
         });
     }

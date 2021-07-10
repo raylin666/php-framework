@@ -13,7 +13,6 @@ namespace Raylin666\Framework;
 
 use Exception;
 use ErrorException;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Raylin666\Config\Config;
 use Raylin666\Config\ConfigOptions;
@@ -82,12 +81,12 @@ class Application implements ApplicationInterface
         $this->container = (new ContainerFactory(new Container()))->getContainer();
 
         // 绑定应用
-        $this->container->bind(ApplicationInterface::class, function () {
+        $this->container->singleton(ApplicationInterface::class, function () {
             return static::$app;
         });
 
         // 绑定配置
-        $this->container->bind(ConfigInterface::class, function () {
+        $this->container->singleton(ConfigInterface::class, function () {
             $config = new Config();
             $config(require sprintf('%s/config.php', dirname(__DIR__)));
             return $config;
@@ -109,7 +108,7 @@ class Application implements ApplicationInterface
         date_default_timezone_set($this->container->get(ConfigInterface::class)->get('timezone'));
 
         // 注册环境配置
-        $this->container->bind(EnvironmentInterface::class, function () {
+        $this->container->singleton(EnvironmentInterface::class, function () {
             return new EnvironmentHelper($this->container->get(ConfigInterface::class)->get('environment'));
         });
 
