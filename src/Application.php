@@ -138,6 +138,7 @@ class Application implements ApplicationInterface
     {
         $level = $this->container->get(ConfigInterface::class)->get('error_reporting');
 
+        // 设置错误级别
         error_reporting($level);
 
         // 设置异常处理器

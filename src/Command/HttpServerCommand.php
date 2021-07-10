@@ -11,6 +11,7 @@
 
 namespace Raylin666\Framework\Command;
 
+use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Server\Contract\ServerInterface;
 use Raylin666\Server\ServerConfig;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Class HttpServerCommand
  * @package Raylin666\Framework\Command
  */
-class HttpServerCommand extends Command
+class HttpServerCommand extends ServerCommand
 {
     /**
      * @var string
@@ -41,6 +42,9 @@ class HttpServerCommand extends Command
     {
         /** @var ServerInterface $server */
         $server = $this->container->get(ServerInterface::class);
+
+        $this->setServerStatusType($input);
+        $this->isDaemon($input);
 
         // 初始化服务配置
         $server->init(new ServerConfig($this->config->get('server')));
