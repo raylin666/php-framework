@@ -137,6 +137,7 @@ return [
             'max_request' => 100000,
             'socket_buffer_size' => 2 * 1024 * 1024,
             'buffer_output_size' => 2 * 1024 * 1024,
+            'daemonize' => false,
         ],
         'callbacks' => [],
     ],

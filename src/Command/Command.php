@@ -15,6 +15,9 @@ use Raylin666\Contract\ConfigInterface;
 use Raylin666\Contract\ContainerInterface;
 use Raylin666\Framework\Contract\ApplicationInterface;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Class Command
@@ -36,6 +39,21 @@ class Command extends SymfonyCommand
      * @var ConfigInterface
      */
     protected $config;
+
+    /**
+     * @var InputInterface|null
+     */
+    protected $input;
+
+    /**
+     * @var OutputInterface|null
+     */
+    protected $output;
+
+    /**
+     * @var SymfonyStyle|null
+     */
+    protected $io;
 
     /**
      * Script name
@@ -65,5 +83,21 @@ class Command extends SymfonyCommand
          */
         $this->setName(static::$name);
         $this->setDescription(static::$description);
+    }
+
+    /**
+     * @param InputInterface|null  $input
+     * @param OutputInterface|null $output
+     * @return SymfonyStyle
+     */
+    protected function getIO($input = null, $output = null): SymfonyStyle
+    {
+        if (! $this->io instanceof SymfonyStyle) {
+            $input = $input ? : $this->input;
+            $output = $output ? : $this->output;
+            $this->io = new SymfonyStyle($input, $output);
+        }
+
+        return $this->io;
     }
 }

@@ -14,9 +14,11 @@ namespace Raylin666\Framework\Command;
 use Exception;
 use Raylin666\Framework\Contract\ServerStateInterface;
 use Raylin666\Framework\Helper\ServerStateHelper;
+use Raylin666\Server\Contract\ServerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class ServerCommand
@@ -40,6 +42,21 @@ abstract class ServerCommand extends Command
     }
 
     /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @return int|void
+     */
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $this->input = $input;
+        $this->output = $output;
+        $state = $this->setServerStatusType($input);
+        $this->isDaemon($input);
+        $this->$state();
+        exit(1);
+    }
+
+    /**
      * 获取服务状态类型
      * @param InputInterface $input
      * @return string
@@ -48,7 +65,7 @@ abstract class ServerCommand extends Command
     protected function setServerStatusType(InputInterface $input): string
     {
         $status = $input->getArgument('status') ?: ServerStateHelper::SERVER_TYPE_STATUS;
-        $this->getServerStateInstance()->withServerStatusType($status);
+        $this->getServerState()->withServerStatusType($status);
         return $status;
     }
 
@@ -60,14 +77,22 @@ abstract class ServerCommand extends Command
     protected function isDaemon(InputInterface $input): bool
     {
         $isDaemon = $input->hasParameterOption(['--daemon', '-d'], true) ? true : false;
-        $this->getServerStateInstance()->withDaemon($isDaemon);
+        $this->getServerState()->withDaemon($isDaemon);
         return $isDaemon;
+    }
+
+    /**
+     * @return ServerInterface
+     */
+    protected function getServer(): ServerInterface
+    {
+        return $this->container->get(ServerInterface::class);
     }
 
     /**
      * @return ServerStateHelper
      */
-    protected function getServerStateInstance(): ServerStateHelper
+    protected function getServerState(): ServerStateHelper
     {
         return $this->container->get(ServerStateInterface::class);
     }
