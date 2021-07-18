@@ -9,15 +9,15 @@
 // | Author: kaka梦很美 <1099013371@qq.com>
 // +----------------------------------------------------------------------
 
-namespace Raylin666\Framework\Helper;
+namespace Raylin666\Framework\Handler;
 
 use Raylin666\Framework\Contract\EnvironmentInterface;
 
 /**
- * Class EnvironmentHelper
- * @package Raylin666\Framework\Helper
+ * Class EnvironmentHandler
+ * @package Raylin666\Framework\Handler
  */
-class EnvironmentHelper implements EnvironmentInterface
+class EnvironmentHandler implements EnvironmentInterface
 {
     /**
      * 当前环境
@@ -26,7 +26,7 @@ class EnvironmentHelper implements EnvironmentInterface
     protected $value = EnvironmentInterface::ENVIRONMENT_DEV;
 
     /**
-     * EnvironmentHelper constructor.
+     * EnvironmentHandler constructor.
      * @param string $value
      */
     public function __construct(string $value)
@@ -75,7 +75,7 @@ class EnvironmentHelper implements EnvironmentInterface
     {
         // TODO: Implement isPre() method.
 
-        return $this->value = EnvironmentInterface::ENVIRONMENT_PRE;
+        return $this->value == EnvironmentInterface::ENVIRONMENT_PRE;
     }
 
     /**
@@ -86,6 +86,6 @@ class EnvironmentHelper implements EnvironmentInterface
     {
         // TODO: Implement isProd() method.
 
-        return $this->value = EnvironmentInterface::ENVIRONMENT_PROD;
+        return $this->value == EnvironmentInterface::ENVIRONMENT_PROD;
     }
 }

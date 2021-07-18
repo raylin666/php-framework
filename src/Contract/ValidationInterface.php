@@ -9,28 +9,20 @@
 // | Author: kaka梦很美 <1099013371@qq.com>
 // +----------------------------------------------------------------------
 
-namespace Raylin666\Framework\Exception;
-
-use Exception;
-use Raylin666\Framework\Contract\ThrowExceptionInterface;
+namespace Raylin666\Framework\Contract;
 
 /**
- * 用于接口响应错误
- * Class ResponseException
- * @package Raylin666\Framework\Exception
+ * Interface ValidationInterface
+ * @package Raylin666\Framework\Contract
  */
-class ResponseException implements ThrowExceptionInterface
+interface ValidationInterface
 {
     /**
-     * @param Exception $e
-     * @return array|mixed
+     * @param array $data
+     * @param array $rules
+     * @param array $messages
+     * @param array $customAttributes
+     * @return mixed
      */
-    public static function getReturn(Exception $e)
-    {
-        // TODO: Implement getReturn() method.
-
-        return (environment()->isPre() || environment()->isProd())
-            ? null
-            : DebugLogsException::getReturn($e);
-    }
+    public function validate(array $data, array $rules, array $messages = [], array $customAttributes = []);
 }

@@ -9,16 +9,16 @@
 // | Author: kaka梦很美 <1099013371@qq.com>
 // +----------------------------------------------------------------------
 
-namespace Raylin666\Framework\Helper;
+namespace Raylin666\Framework\Handler;
 
 use Exception;
 use Raylin666\Framework\Contract\ServerStateInterface;
 
 /**
- * Class ServerStateHelper
- * @package Raylin666\Framework\Helper
+ * Class ServerStateHandler
+ * @package Raylin666\Framework\Handler
  */
-class ServerStateHelper implements ServerStateInterface
+class ServerStateHandler implements ServerStateInterface
 {
     /**
      * 服务状态类型

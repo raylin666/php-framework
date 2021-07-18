@@ -15,6 +15,7 @@ use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Logger\LoggerFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\RequestInterface;
+use Raylin666\Router\RouterInterface;
 
 if (! function_exists('app')) {
     /**
@@ -79,7 +80,7 @@ if (! function_exists('logger')) {
 if (! function_exists('request')) {
     /**
      * 获取请求
-     * @return RequestInterface|\Raylin666\Framework\Http\Response
+     * @return RequestInterface|\Raylin666\Http\Request
      * @throws Exception
      */
     function request()
@@ -91,11 +92,23 @@ if (! function_exists('request')) {
 if (! function_exists('response')) {
     /**
      * 获取响应
-     * @return ResponseInterface|\Raylin666\Http\Response
+     * @return ResponseInterface|\Raylin666\Framework\Http\Response
      * @throws Exception
      */
     function response()
     {
         return container()->get(ResponseInterface::class);
+    }
+}
+
+if (! function_exists('route')) {
+    /**
+     * 获取路由
+     * @return mixed|object|\Raylin666\Router\RouteCollection
+     * @throws Exception
+     */
+    function route()
+    {
+        return container()->get(RouterInterface::class);
     }
 }

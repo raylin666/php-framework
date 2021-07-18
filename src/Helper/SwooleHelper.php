@@ -31,7 +31,7 @@ class SwooleHelper
             $search_keyword
         ) . sprintf(
             ' |grep %s',
-            ServerStateHelper::SERVER_TYPE_START
+            ServerStateHandler::SERVER_TYPE_START
             );
         return $command;
     }

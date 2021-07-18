@@ -2,7 +2,7 @@
 // +----------------------------------------------------------------------
 // | Created by linshan. 版权所有 @
 // +----------------------------------------------------------------------
-// | Copyright (c) 2020 All rights reserved.
+// | Copyright (c) 2021 All rights reserved.
 // +----------------------------------------------------------------------
 // | Technology changes the world . Accumulation makes people grow .
 // +----------------------------------------------------------------------
@@ -20,6 +20,7 @@ use Raylin666\Framework\ServiceProvider\RouterServiceProvider;
 use Raylin666\Framework\ServiceProvider\ServerServiceProvider;
 use Raylin666\Framework\ServiceProvider\ConsoleServiceProvider;
 use Raylin666\Framework\ServiceProvider\EventListenerServiceProvider;
+use Raylin666\Framework\ServiceProvider\ValidatorServiceProvider;
 use Raylin666\Framework\Command\ServerCommand;
 use Raylin666\Server\Callbacks\OnRequest;
 
@@ -27,7 +28,7 @@ return [
     /**
      * 应用名称
      */
-    'name' => 'raylin66 framework',
+    'name' => 'raylin',
 
     /**
      * 应用版本
@@ -58,6 +59,7 @@ return [
         ServerServiceProvider::class,
         LoggerServiceProvider::class,
         EventListenerServiceProvider::class,
+        ValidatorServiceProvider::class,
     ],
 
     /**
@@ -81,6 +83,16 @@ return [
      * 中间件服务
      */
     'middlewares' => [],
+
+    /**
+     * 数据验证
+     */
+    'validator' => [
+        // 语言包存放目录路径
+        'lang_path' => __DIR__ . '/lang',
+        // 所使用的语言包
+        'lang' => 'zh',
+    ],
 
     /**
      * 日志服务

@@ -12,8 +12,11 @@
 namespace Raylin666\Framework;
 
 use Exception;
+use Psr\Http\Message\RequestInterface;
+use Throwable;
 use ErrorException;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Raylin666\Config\Config;
 use Raylin666\Config\ConfigOptions;
 use Raylin666\Container\Container;
@@ -26,9 +29,10 @@ use Raylin666\Framework\Contract\EnvironmentInterface;
 use Raylin666\Framework\Exception\DebugLogsException;
 use Raylin666\Framework\Exception\HttpException;
 use Raylin666\Framework\Exception\ResponseException;
-use Raylin666\Framework\Helper\EnvironmentHelper;
+use Raylin666\Framework\Handler\EnvironmentHandler;
 use Raylin666\Framework\Http\Response;
 use Raylin666\Framework\ServiceProvider\ConfigServiceProvider;
+use Raylin666\Router\RouterDispatcherInterface;
 
 /**
  * Class Application
@@ -109,7 +113,7 @@ class Application implements ApplicationInterface
 
         // 注册环境配置
         $this->container->singleton(EnvironmentInterface::class, function () {
-            return new EnvironmentHelper($this->container->get(ConfigInterface::class)->get('environment'));
+            return new EnvironmentHandler($this->container->get(ConfigInterface::class)->get('environment'));
         });
 
         // 注册其他服务提供者
@@ -141,33 +145,7 @@ class Application implements ApplicationInterface
         error_reporting($level);
 
         // 设置异常处理器
-        set_exception_handler(function ($e) {
-            // 异常捕获转换
-            if (! $e instanceof Exception) {
-                $e = new ErrorException($e);
-            }
-
-            try {
-                $trace = DebugLogsException::getReturn($e);
-            } catch (Exception $exception) {
-                $trace = [
-                    'original' => explode("\n", $e->getTraceAsString()),
-                    'handler'  => explode("\n", $exception->getTraceAsString()),
-                ];
-            }
-
-            logger()->error($e->getMessage(), $trace);
-
-            $status = ($e instanceof HttpException) ? $e->getStatusCode() : $e->getCode();
-            if (! array_key_exists($status, Response::$statusTexts)) {
-                $status = Response::HTTP_INTERNAL_SERVER_ERROR;
-            }
-
-            $response = $this->container->get(ResponseInterface::class)->RESTfulAPI(ResponseException::getReturn($e), $status);
-
-            // 处理响应
-            return $this->isExecute() ? $response : $response->send();
-        });
+        set_exception_handler([$this, 'handlerException']);
 
         // 设置错误处理器
         set_error_handler(function ($level, $message, $file, $line) {
@@ -223,6 +201,64 @@ class Application implements ApplicationInterface
     public function getConfigOptions(): ConfigOptions
     {
         return $this->configOptions;
+    }
+
+    /**
+     * 异常处理
+     * @param $e
+     * @return mixed
+     */
+    public function handlerException($e)
+    {
+        // 异常捕获转换
+        if (! $e instanceof Exception) {
+            $e = new ErrorException($e);
+        }
+
+        try {
+            $trace = DebugLogsException::getReturn($e);
+        } catch (Exception $exception) {
+            $trace = [
+                'original' => explode("\n", $e->getTraceAsString()),
+                'handler'  => explode("\n", $exception->getTraceAsString()),
+            ];
+        }
+
+        logger()->error($e->getMessage(), $trace);
+
+        $status = ($e instanceof HttpException) ? $e->getStatusCode() : $e->getCode();
+        if (! array_key_exists($status, Response::$statusTexts)) {
+            $status = Response::HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        $response = $this->container->get(ResponseInterface::class)->RESTfulAPI(ResponseException::getReturn($e), $status);
+
+        // 处理响应
+        return $this->isExecute() ? $response : $response->send();
+    }
+
+    /**
+     * 处理请求
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface|Response
+     */
+    public function handlerRequest(ServerRequestInterface $request)
+    {
+        try {
+            $this->container->bind(RequestInterface::class, function () use ($request) {
+                return $request;
+            });
+
+            if (! (($response = $this->container->get(RouterDispatcherInterface::class)->dispatch($request)) instanceof ResponseInterface)) {
+                throw new Exception('request error');
+            }
+
+            return $response;
+        } catch (Exception $e) {
+            return $this->handlerException($e);
+        } catch (Throwable $e) {
+            return $this->handlerException(new ErrorException($e));
+        }
     }
 
     /**
