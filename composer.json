@@ -1,7 +1,7 @@
 {
   "name": "raylin666/framework",
   "type": "library",
-  "description": "基于 Swoole 扩展开发的一套高性能网络通信框架",
+  "description": "基于 Swoole 扩展开发的一套高性能网络通信底层框架",
   "keywords" : [
     "php",
     "swoole",
