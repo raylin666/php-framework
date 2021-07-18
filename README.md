@@ -11,7 +11,7 @@
 ### 安装说明
 
 ```
-composer require "raylin666/php-framework"
+composer require "raylin666/framework"
 ```
 
 ### 使用方式
