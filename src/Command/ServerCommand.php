@@ -12,8 +12,15 @@
 namespace Raylin666\Framework\Command;
 
 use Exception;
+use Swoole\Server\Port;
+use swoole_process;
+use Raylin666\Server\ServerManager;
+use Raylin666\Server\ServerConfig;
+use Raylin666\Utils\Helper\PhpHelper;
 use Raylin666\Framework\Contract\ServerStateInterface;
+use Raylin666\Server\Contract\ServerManangerInterface;
 use Raylin666\Framework\Helper\ServerStateHelper;
+use Raylin666\Framework\Helper\SwooleHelper;
 use Raylin666\Server\Contract\ServerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,8 +31,18 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Class ServerCommand
  * @package Raylin666\Framework\Command
  */
-abstract class ServerCommand extends Command
+class ServerCommand extends Command
 {
+    /**
+     * @var string
+     */
+    protected static $name = 'server';
+
+    /**
+     * @var string
+     */
+    protected static $description = '创建 Swoole 服务';
+
     /**
      * Console configure
      */
@@ -82,11 +99,181 @@ abstract class ServerCommand extends Command
     }
 
     /**
+     * 获取服务 PID
+     * @return int
+     * @throws Exception
+     */
+    protected function getServerPid(): int
+    {
+        $pidFile = $this->config->get('server.settings.pid_file');
+        if (! file_exists($pidFile)) {
+            throw new Exception('服务 PID 文件不存在, 只能手动 KILL 进程, 并请检查服务是否已停止或它是否在守护程序模式下运行！');
+        }
+
+        return intval(file_get_contents($pidFile));
+    }
+
+    /**
+     * 获取服务状态
+     */
+    protected function status()
+    {
+        exec(SwooleHelper::getPsAuxProcessCommand(static::$name), $output);
+
+        // 进程列表
+        $rows = SwooleHelper::getAllProcess(static::$name);
+        $headers = ['USER', 'PID', 'RSS', 'STAT', 'START', 'COMMAND'];
+        foreach ($rows as $key => $value) {
+            $rows[$key] = array_combine($headers, $value);
+        }
+
+        $this->getIO()->table($headers, $rows);
+        $pidFile = $this->config->get('server.settings.pid_file');
+        if (file_exists($pidFile)) {
+            $this->getIO()->success('服务已处于运行状态');
+        } else {
+            $this->getIO()->warning('服务已处于停止状态');
+        }
+
+        unset($headers, $output, $rows);
+    }
+
+    /**
+     * 启动服务
+     */
+    protected function start()
+    {
+        $server = $this->getServer();
+        $config = $this->config->get('server');
+        // 是否守护进程模式
+        $daemonize = $config['settings']['daemonize'] ?? false;
+        if (! $daemonize) {
+            $config['settings']['daemonize'] = $this->getServerState()->isDaemon();
+        }
+
+        // 初始化服务配置
+        $server->init(new ServerConfig($config));
+
+        $servNames = array_column($config['servers'], 'name');
+        $listenerStrings = '';
+        foreach ($servNames as $servName) {
+            if ($this->getServerManager()::has($servName)) {
+                $servListener = ServerManager::get($servName);
+                /** @var Port $servPort */
+                $servPort = $servListener[1];
+                $listenerStrings .= sprintf(
+                    '> %s - %s:%d' . PHP_EOL,
+                    $servName,
+                    $servPort->host,
+                    $servPort->port
+                    );
+            }
+        }
+
+        $messages = [
+            ['服务类型', implode(', ', $servNames)],
+            ['', ''],
+            ['监听信息', $listenerStrings],
+            ['服务监控地址', $server->getServer()->host],
+            ['服务监听端口', $server->getServer()->port],
+            ['服务 PID 文件', $config['settings']['pid_file'] ?? ''],
+            ['PHP 运行版本', phpversion()],
+            ['Swoole 运行版本', SWOOLE_VERSION],
+            ['当前机器所有网络接口的IP地址', SwooleHelper::getLocalIp()],
+            ['正在运行的服务用户', get_current_user()],
+            ['是否守护进程模式', $this->getServerState()->isDaemon() ? '是' : '否'],
+            ['框架运行名称', $this->app->name()],
+            ['框架运行版本', $this->app->version()],
+        ];
+
+        $headers = ['信息名称', '信息内容'];
+        foreach ($messages as $key => $value) {
+            $messages[$key] = array_combine($headers, $value);
+        }
+
+        $this->getIO()->table($headers, $messages);
+        $this->getIO()->success(
+            sprintf(
+                '服务已成功启动 - %s:%d, 启动时间 - %s',
+                $server->getServer()->host,
+                $server->getServer()->port,
+                date('Y-m-d H:i:s')
+            )
+        );
+
+        unset($headers, $rows);
+
+        // 启动服务
+        $this->getServer()->start();
+    }
+
+    /**
+     * 服务平滑重启
+     */
+    protected function reload()
+    {
+        PhpHelper::opCacheClear();
+        $pid = $this->getServerPid();
+        if (! swoole_process::kill($pid, SIG_DFL)) {
+            throw new Exception(sprintf('服务 PID : %d 不存在 ', $pid));
+        }
+
+        swoole_process::kill($pid, SIGUSR1);
+
+        $this->getIO()->success(
+            sprintf(
+                '服务 PID : %d 正在向所有工作进程发送平滑加载通知服务, 于 %s 完成加载',
+                $pid,
+                date('Y-m-d H:i:s')
+            )
+        );
+    }
+
+    /**
+     * 停止服务
+     * @throws Exception
+     */
+    protected function stop()
+    {
+        $pid = $this->getServerPid();
+        if (! swoole_process::kill($pid, SIG_DFL)) {
+            throw new Exception(sprintf('服务 PID : %d 不存在 ', $pid));
+        }
+
+        swoole_process::kill($pid, SIGTERM);
+
+        $time = time();
+        while (true) {
+            // 延迟执行
+            usleep(100000);
+            if (swoole_process::kill($pid, SIG_DFL)) {
+                swoole_process::kill($pid, SIGTERM);
+
+                if (time() > $time+15) {
+                    throw new Exception('服务停止异常 - 请尝试强制停止服务或 KILL 进程');
+                }
+            } else {
+                // 检查进程是否已杀死, 发送停止服务信号
+                $this->getIO()->success(sprintf('服务已成功停止, 停止时间 - %s', date('Y-m-d H:i:s')));
+                break;
+            }
+        }
+    }
+
+    /**
      * @return ServerInterface
      */
     protected function getServer(): ServerInterface
     {
         return $this->container->get(ServerInterface::class);
+    }
+
+    /**
+     * @return ServerManager|string
+     */
+    protected function getServerManager()
+    {
+        return $this->container->get(ServerManangerInterface::class);
     }
 
     /**

@@ -30,7 +30,8 @@
     "raylin666/logger": "^1.0",
     "raylin666/middleware": "^1.0",
     "raylin666/routing": "^1.0",
-    "raylin666/http": "^1.0"
+    "raylin666/http": "^1.0",
+    "raylin666/event-dispatcher": "^1.0"
   },
   "autoload": {
     "psr-4": {

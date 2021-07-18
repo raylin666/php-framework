@@ -12,17 +12,17 @@
 namespace Raylin666\Framework\ServiceProvider;
 
 use Psr\Container\ContainerInterface;
+use Raylin666\Contract\EventDispatcherInterface;
+use Raylin666\Contract\ListenerProviderInterface;
 use Raylin666\Contract\ServiceProviderInterface;
-use Raylin666\Server\Contract\ServerInterface;
-use Raylin666\Server\Contract\ServerManangerInterface;
-use Raylin666\Server\Server;
-use Raylin666\Server\ServerManager;
+use Raylin666\EventDispatcher\Dispatcher;
+use Raylin666\EventDispatcher\ListenerProvider;
 
 /**
- * Class ServerServiceProvider
+ * Class EventListenerServiceProvider
  * @package Raylin666\Framework\ServiceProvider
  */
-class ServerServiceProvider implements ServiceProviderInterface
+class EventListenerServiceProvider implements ServiceProviderInterface
 {
     /**
      * @param ContainerInterface $container
@@ -32,12 +32,14 @@ class ServerServiceProvider implements ServiceProviderInterface
     {
         // TODO: Implement register() method.
 
-        $container->bind(ServerManangerInterface::class, function () {
-            return ServerManager::class;
+        $container->singleton(ListenerProviderInterface::class, function () {
+            return new ListenerProvider;
         });
 
-        $container->singleton(ServerInterface::class, function () {
-            return new Server();
+        $container->singleton(EventDispatcherInterface::class, function () use ($container) {
+            $dispatcher = new Dispatcher;
+            $dispatcher($container->get(ListenerProviderInterface::class));
+            return $dispatcher;
         });
     }
 }

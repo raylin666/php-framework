@@ -19,7 +19,8 @@ use Raylin666\Framework\ServiceProvider\LoggerServiceProvider;
 use Raylin666\Framework\ServiceProvider\RouterServiceProvider;
 use Raylin666\Framework\ServiceProvider\ServerServiceProvider;
 use Raylin666\Framework\ServiceProvider\ConsoleServiceProvider;
-use Raylin666\Framework\Command\HttpServerCommand;
+use Raylin666\Framework\ServiceProvider\EventListenerServiceProvider;
+use Raylin666\Framework\Command\ServerCommand;
 use Raylin666\Server\Callbacks\OnRequest;
 
 return [
@@ -56,14 +57,15 @@ return [
         RouterServiceProvider::class,
         ServerServiceProvider::class,
         LoggerServiceProvider::class,
+        EventListenerServiceProvider::class,
     ],
 
     /**
      * 控制台命令
      */
     'commands' => [
-        'HttpServer' => [
-            'name' => HttpServerCommand::class,
+        'server' => [
+            'name' => ServerCommand::class,
         ],
     ],
 
@@ -131,6 +133,7 @@ return [
             'enable_coroutine' => true,
             'worker_num' => swoole_cpu_num(),
             'pid_file' => 'runtime/server.pid',
+            'log_level' => SWOOLE_LOG_INFO,
             'open_tcp_nodelay' => true,
             'max_coroutine' => 100000,
             'open_http2_protocol' => true,
