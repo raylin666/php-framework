@@ -11,6 +11,8 @@
 
 namespace Raylin666\Framework\Helper;
 
+use Raylin666\Framework\Handler\ServerStateHandler;
+
 /**
  * Class SwooleHelper
  * @package Raylin666\Framework\Helper
