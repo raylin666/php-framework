@@ -17,6 +17,7 @@ use Raylin666\Contract\ConfigInterface;
 use Raylin666\Contract\ServiceProviderInterface;
 use Raylin666\Framework\Application;
 use Raylin666\Framework\Contract\ApplicationInterface;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ConfigServiceProvider
@@ -40,6 +41,15 @@ class ConfigServiceProvider implements ServiceProviderInterface
         $configArray = $config->make($app->getConfigOptions());
         // 配置合并
         $configMerge = array_merge($config->toArray(), $configArray);
+
+        // 合并 env.yml 文件配置内容
+        $yamlFile = app()->path() . '/.env.yml';
+        if (file_exists($yamlFile)) {
+            $yamlConfig = Yaml::parseFile($yamlFile);
+            if (is_array($yamlConfig)) {
+                $configMerge = $yamlConfig + $configMerge;
+            }
+        }
 
         $config($configMerge);
 
