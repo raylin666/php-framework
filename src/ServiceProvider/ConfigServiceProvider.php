@@ -38,20 +38,29 @@ class ConfigServiceProvider implements ServiceProviderInterface
 
         /** @var ConfigInterface|Config $config */
         $config = $container->get(ConfigInterface::class);
-        $configArray = $config->make($app->getConfigOptions());
+
         // 配置合并
-        $configMerge = array_merge($config->toArray(), $configArray);
+        $configMakeMerge = function () use ($app, $config) {
+            return array_merge($config->toArray(), $config->make($app->getConfigOptions()));
+        };
 
         // 合并 env.yml 文件配置内容
-        $yamlFile = app()->path() . '/.env.yml';
-        if (file_exists($yamlFile)) {
-            $yamlConfig = Yaml::parseFile($yamlFile);
-            if (is_array($yamlConfig)) {
-                $configMerge = $yamlConfig + $configMerge;
+        $configYmlMerge = function (array $configMerge) {
+            $yamlFile = $configMerge['yml_config_file'] ?? app()->path() . '/.env.yml';
+            if (file_exists($yamlFile)) {
+                $yamlConfig = Yaml::parseFile($yamlFile);
+                if (is_array($yamlConfig)) {
+                    $configMerge = $yamlConfig + $configMerge;
+                }
             }
-        }
 
-        $config($configMerge);
+            return $configMerge;
+        };
+
+        // 循环覆盖配置, 解决配置想函数调用静态化问题
+        for ($i = 0; $i < 2; $i++) {
+            $config($configYmlMerge($configMakeMerge()));
+        }
 
         // 重新绑定配置
         $container->singleton(ConfigInterface::class, function () use ($config) {

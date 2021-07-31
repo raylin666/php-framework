@@ -21,8 +21,10 @@ use Raylin666\Framework\ServiceProvider\ServerServiceProvider;
 use Raylin666\Framework\ServiceProvider\ConsoleServiceProvider;
 use Raylin666\Framework\ServiceProvider\EventListenerServiceProvider;
 use Raylin666\Framework\ServiceProvider\ValidatorServiceProvider;
+use Raylin666\Framework\ServiceProvider\DatabaseServiceProvider;
 use Raylin666\Framework\Command\ServerCommand;
-use Raylin666\Server\Callbacks\OnRequest;
+use Raylin666\Framework\Swoole\Events\OnRequest;
+use Raylin666\Framework\Swoole\Events\OnWorkerStart;
 
 return [
     /**
@@ -51,6 +53,11 @@ return [
     'error_reporting' => E_ALL,
 
     /**
+     * .yml 配置文件
+     */
+    'yml_config_file' => app()->path() . '/.env.yml',
+
+    /**
      * 服务提供者
      */
     'providers' => [
@@ -60,6 +67,7 @@ return [
         LoggerServiceProvider::class,
         EventListenerServiceProvider::class,
         ValidatorServiceProvider::class,
+        DatabaseServiceProvider::class,
     ],
 
     /**
@@ -92,6 +100,25 @@ return [
         'lang_path' => __DIR__ . '/lang',
         // 所使用的语言包
         'lang' => 'zh',
+    ],
+
+    /**
+     * 数据库配置
+     */
+    'database' => [
+        'default' => [
+            'driver' => 'mysql',
+            'host' => '127.0.0.1',
+            'port' => 3306,
+            'username' => 'root',
+            'password' => '',
+            'dbname' => '',
+            'charset' => 'utf8mb4',
+            'prefix' => '',
+            'min_connections' => 20,
+            'max_connections' => 2000,
+            'wait_timeout' => 60,
+        ],
     ],
 
     /**
@@ -154,6 +181,8 @@ return [
             'buffer_output_size' => 2 * 1024 * 1024,
             'daemonize' => false,
         ],
-        'callbacks' => [],
+        'callbacks' => [
+            SwooleEvent::ON_WORKER_START => OnWorkerStart::class
+        ],
     ],
 ];

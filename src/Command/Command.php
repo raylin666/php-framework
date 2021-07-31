@@ -90,7 +90,7 @@ class Command extends SymfonyCommand
      * @param OutputInterface|null $output
      * @return SymfonyStyle
      */
-    protected function getIO($input = null, $output = null): SymfonyStyle
+    protected function getio($input = null, $output = null): SymfonyStyle
     {
         if (! $this->io instanceof SymfonyStyle) {
             $input = $input ? : $this->input;

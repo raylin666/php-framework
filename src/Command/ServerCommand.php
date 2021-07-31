@@ -106,11 +106,7 @@ class ServerCommand extends Command
     protected function getServerPid(): int
     {
         $pidFile = $this->config->get('server.settings.pid_file');
-        if (! file_exists($pidFile)) {
-            throw new Exception('服务 PID 文件不存在, 只能手动 KILL 进程, 并请检查服务是否已停止或它是否在守护程序模式下运行！');
-        }
-
-        return intval(file_get_contents($pidFile));
+        return file_exists($pidFile) ? intval(file_get_contents($pidFile)) : 0;
     }
 
     /**
@@ -127,12 +123,13 @@ class ServerCommand extends Command
             $rows[$key] = array_combine($headers, $value);
         }
 
-        $this->getIO()->table($headers, $rows);
-        $pidFile = $this->config->get('server.settings.pid_file');
-        if (file_exists($pidFile)) {
-            $this->getIO()->success('服务已处于运行状态');
+        $this->getio()->table($headers, $rows);
+
+        $pid = $this->getServerPid();
+        if (!empty($pid) && swoole_process::kill($pid, SIG_DFL)) {
+            $this->getio()->success('服务已处于运行状态');
         } else {
-            $this->getIO()->warning('服务已处于停止状态');
+            $this->getio()->warning('服务已处于停止状态');
         }
 
         unset($headers, $output, $rows);
@@ -191,8 +188,8 @@ class ServerCommand extends Command
             $messages[$key] = array_combine($headers, $value);
         }
 
-        $this->getIO()->table($headers, $messages);
-        $this->getIO()->success(
+        $this->getio()->table($headers, $messages);
+        $this->getio()->success(
             sprintf(
                 '服务已成功启动 - %s:%d, 启动时间 - %s',
                 $server->getServer()->host,
@@ -220,7 +217,7 @@ class ServerCommand extends Command
 
         swoole_process::kill($pid, SIGUSR1);
 
-        $this->getIO()->success(
+        $this->getio()->success(
             sprintf(
                 '服务 PID : %d 正在向所有工作进程发送平滑加载通知服务, 于 %s 完成加载',
                 $pid,
@@ -236,8 +233,8 @@ class ServerCommand extends Command
     protected function stop()
     {
         $pid = $this->getServerPid();
-        if (! swoole_process::kill($pid, SIG_DFL)) {
-            throw new Exception(sprintf('服务 PID : %d 不存在 ', $pid));
+        if (empty($pid) || (! swoole_process::kill($pid, SIG_DFL))) {
+            return $this->getio()->warning('服务已处于停止状态');
         }
 
         swoole_process::kill($pid, SIGTERM);
@@ -254,7 +251,7 @@ class ServerCommand extends Command
                 }
             } else {
                 // 检查进程是否已杀死, 发送停止服务信号
-                $this->getIO()->success(sprintf('服务已成功停止, 停止时间 - %s', date('Y-m-d H:i:s')));
+                $this->getio()->success(sprintf('服务已成功停止, 停止时间 - %s', date('Y-m-d H:i:s')));
                 break;
             }
         }
